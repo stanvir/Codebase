@@ -10,31 +10,26 @@
 rm(list=ls())
 library(ggplot2)
 
-#load the functions needed
-#setwd("C:\\Users\\SHAMS\\Desktop\\i2D_Data")
-source("FES_functions.R")
+source("R/FES_functions.R")
 
-rawdat<-read.csv("trip_data_rev_neg_valueX.csv")
+rawdat<-read.csv("data/trip_data_rev_neg_valueX.csv")
 rawdat= as.data.frame(rawdat)
 
-#read the csv file from google drive #ARPAE > WebsiteCheck
-rawdat <- rawdat[complete.cases(rawdat[,3]),]
+
+rawdat <- rawdat[complete.cases(rawdat[,5]),]
 rawdat$Acceleration <- rep(NA, length(rawdat[,1]))
 rawdat$Jerk <- rep(NA, length(rawdat[,1]))
 rawdat$Speed.mph <- numconvert(rawdat$speed) * 2.236936
 
-#rawdat$Slope..m.m. <- numconvert(rawdat$Slope..m.m)
+
 rawdat$TRIP_ID <- as.character(rawdat$trip_history_id)
 
-#Speed=rawdat[,5]
 
 tripidList <- unique(rawdat$TRIP_ID)
 
 
 coefficient <- NULL
 
-
-#selectedTripid <- sample(tripidList, 5)
 selectedTripid <- tripidList
 
 selected_trip <- rawdat[tripidList %in% selectedTripid,]
@@ -57,4 +52,25 @@ for(j in 1:length(ndat5)){
   }
 }
 
-write.csv(selected_trip, file = "Computed accel_Jerk_negX.csv")
+#calculate VSP
+selected_trip$VSP_Livedrive <- 0.8 + 0.75* (selected_trip$VSP_myway) + 0.001* (selected_trip$VSP_myway)^2
+
+#calculate fuel consumption
+breaks <- c(-Inf,0,60, Inf)
+a <- c(0.3,0.462, 4.39)
+b <- c(0, 0.55,0)
+range <- cut(selected_trip$VSP_Livedrive, breaks, labels = FALSE)
+selected_trip$FC <- a[range]*(selected_trip$VSP_Livedrive)^b[range]
+
+write.csv(selected_trip, file = "data/Computed accel_Jerk_negX.csv")
+
+#plotting to see if the speed and acceleration traces make sense
+plottrip <- selected_trip[selected_trip$TRIP_ID %in% selectedTripid[1],]
+plottrip$tstamp <- as.character(plottrip$tstamp)
+plottrip$tstamp <- strtrim(plottrip$tstamp, 19)
+plottrip$tstamp <- strptime(plottrip$tstamp, "%Y-%m-%d %H:%M:%S")
+
+
+
+ggplot(plottrip, aes(x= tstamp, y= Speed.mph)) + geom_line()
+ggplot(plottrip, aes(x= tstamp, y= Acceleration)) + geom_line()

@@ -1,12 +1,13 @@
+rm(list=ls())
 rawdat<-read.csv("Computed accel_Jerk_negX.csv")
 data<-read.csv("trip_metadata_rev_neg_valueX.csv")
-rawdat= as.data.frame(rawdat)
-data=as.data.frame(data)
-id=unique(rawdat$trip_history_id)
+rawdat <- as.data.frame(rawdat)
+data <- as.data.frame(data)
+id <- unique(rawdat$trip_history_id)
 # There are 183 unique trips
 
-trip_id=as.character(id)
-percentage=matrix(0,183,9)
+trip_id <- as.character(id)
+percentage <- matrix(0,183,9)
 
 #for loop for calculating variables
 for (i in 1:183){
@@ -31,8 +32,12 @@ for (i in 1:183){
   percentage[i,7]=over_pos_Jerk/total_time
   percentage[i,8]=Jerk_95th
   percentage[i,9]=Jerk_98th
-}
+  totalFCGallon <- as.numeric(sum(sub_data$FC))/2800
+  averageSpeed <- as.numeric(mean(sub_data$Speed.mph))
+  totalDistance <- total_time/ (averageSpeed/ 3600) #distance in miles
+  standardMPG <-  totalDistance /totalFCGallon
 
+}
 
 #Matching with Trip_ID in metadata file and put the computed variables
 K=as.data.frame(trip_id)
@@ -41,5 +46,25 @@ unique_id=cbind(K,percentage)
 colnames(unique_id)<- c("trip_history_id",">40mph",">70mph",">1 accel",
                         ">5 accel",">5 deccel","Neg Jerk","Pos Jerk","95th Jerk","98th Jerk")
 new_data=merge(data,unique_id,by="trip_history_id")
+
+
+new_data$averagespeedbin <- cut (new_data$averageSpeed, seq(0,100,10),
+                                include.lowest = T)
+
+#need to have quantile loaded in the environment
+quantile <- read.csv(file= "data/quantile3.csv", header= T)
+quantile <- quantile[,c(1,2,10)]
+new_data <- merge(quantile, new_data, by= "averagespeedbin")
+
+FES_calc2 <- function (MPG, ui, li){
+        if(MPG > ui) {FES <- 100}
+        else if (MPG < li) {FES <- 20}
+        else {FES <- 20+ (MPG - li)/(ui- li)*80}
+        return(FES)
+}
+
+new_data <-  new_data[complete.cases(new_data),]
+new_data$FES_recalculated <- mapply(FES_calc2,MPG = new_data$standardMPG,
+                      ui = newdata$ui, li = newdata$li)
 
 write.csv(new_data, file = "Metadata with variables_perc.csv")
