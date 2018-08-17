@@ -18,7 +18,7 @@ for (i in 1:183){
   over_70=as.numeric(dim(sub_data[sub_data$Speed.mph>70,])[1])
   over_1accel=as.numeric(dim(sub_data[sub_data$Acceleration>1,])[1])
   over_5accel=as.numeric(dim(sub_data[sub_data$Acceleration>5,])[1])
-  over_5deccel=as.numeric(dim(sub_data[sub_data$Acceleration<-5,])[1])
+  over_5deccel=as.numeric(dim(sub_data[sub_data$Acceleration<(-5),])[1])
   over_neg_Jerk=as.numeric(dim(sub_data[sub_data$Jerk<0,])[1])
   over_pos_Jerk=as.numeric(dim(sub_data[sub_data$Jerk>0,])[1])
   Jerk_95th=as.numeric(quantile(sub_data$Jerk, .95, na.rm=TRUE))
