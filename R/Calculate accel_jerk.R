@@ -13,7 +13,7 @@ library(ggplot2)
 source("R/FES_functions.R")
 
 rawdat<-read.csv("data/trip_data_rev_neg_valueX.csv")
-rawdat= as.data.frame(rawdat)
+rawdat <- as.data.frame(rawdat)
 
 
 rawdat <- rawdat[complete.cases(rawdat[,5]),]
@@ -28,17 +28,15 @@ rawdat$TRIP_ID <- as.character(rawdat$trip_history_id)
 tripidList <- unique(rawdat$TRIP_ID)
 
 
-coefficient <- NULL
+selectedTripid <- tripidList #it is possible to filter the trips here
 
-selectedTripid <- tripidList
 
-selected_trip <- rawdat[tripidList %in% selectedTripid,]
 selected_trip <- rawdat[rawdat$TRIP_ID %in% selectedTripid, ]
 ndat5 <- split(seq(nrow(selected_trip)), selected_trip$TRIP_ID)
 
 
 for(j in 1:length(ndat5)){
-        for(i in 2:length(ndat5[[j]])-1){
+        for(i in 1:length(ndat5[[j]])-1){
                 selected_trip$Acceleration[ndat5[[j]][i]] <- 1.466667 *((selected_trip$Speed.mph[ndat5[[j]][i+1]]-
                                                                       selected_trip$Speed.mph[ndat5[[j]][i]]))
         }
@@ -46,13 +44,16 @@ for(j in 1:length(ndat5)){
 
 
 for(j in 1:length(ndat5)){
-  for(i in 2:length(ndat5[[j]])-1){
+  for(i in 1:length(ndat5[[j]])-2){
     selected_trip$Jerk[ndat5[[j]][i]] <- (selected_trip$Acceleration[ndat5[[j]][i+1]]-
                                                     selected_trip$Acceleration[ndat5[[j]][i]])
   }
 }
 
 #calculate VSP
+selected_trip$VSP_myway <- CalculateVSP(selected_trip$Speed.mph,
+                                        selected_trip$Acceleration)
+
 selected_trip$VSP_Livedrive <- 0.8 + 0.75* (selected_trip$VSP_myway) + 0.001* (selected_trip$VSP_myway)^2
 
 #calculate fuel consumption
